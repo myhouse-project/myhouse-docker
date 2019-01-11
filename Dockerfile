@@ -1,58 +1,64 @@
-# import from Rasbpian Jessie
-FROM raspbian/jessie
+FROM resin/rpi-raspbian
+
+# define variables
+ENV MYHOUSE_VERSION=2.4 \
+  RTL_433_VERSION=18.05 \
+  WORKDIR=/apps
 
 # define metadata
-LABEL com.myhouse-project.version="2.4"
+LABEL com.myhouse-project.version="$MYHOUSE_VERSION"
 
 # Set the working dir
-WORKDIR /build
+WORKDIR $WORKDIR
 
 # Install required packages with apt
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections \
   && apt-get update \
   && apt-get install -y \
-  redis-server \
+  screen \
+  unzip \
+  less \
+  curl \
+  expect \
+  net-tools \
+  usbutils \
+  raspi-config \
+  raspi-gpio \
+  wiringpi \
+  libraspberrypi-bin \
+  build-essential \
+  autoconf \
+  cmake \
+  pkg-config \
+  libtool \
+  libusb-1.0.0-dev \
+  python-pip \
+  python-serial \
   python-dev \
   python-flask \
   python-redis \
   python-numpy \
   python-rpi.gpio \
-  libttspico-utils \
+  python-feedparser \
   python-opencv \
   mpg123 \
   sox \
   flac \
   pocketsphinx \
-  python-feedparser \
-  python-serial \
-  screen \
-  unzip \
-  python-pip \
-  libtool \
-  libusb-1.0.0-dev \
-  librtlsdr-dev \
+  libttspico-utils \
   rtl-sdr \
-  build-essential \
-  autoconf \
-  cmake \
-  pkg-config \
-  bluez \
-  alsa-utils \
-  usbutils \
-  net-tools \
-  pulseaudio-module-bluetooth  \
+  librtlsdr-dev \
   bluetooth \
+  bluez \
   bluez-tools \
-  expect \
+  alsa-utils \
+  pulseaudio-module-bluetooth  \
+  redis-server \
   rsyslog \
   openssh-server \
-  qemu-user-static \
-  less \
-  curl \
-  raspi-config \
-  raspi-gpio \
-  wiringpi \
-  libraspberrypi-bin \
+  mosquitto \
+  mosquitto-clients \
+  wget \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -72,15 +78,22 @@ RUN pip install setuptools --upgrade \
   gTTS==2.0.3 \
   gTTS-token==1.1.3 \
   SpeechRecognition==3.5.0 \
-  Adafruit-Python-DHT==1.1.2 \
   Adafruit-ADS1x15==1.0.2 \
   six==1.11.0
+ENV ADAFRUIT_DHT_VERSION=1.3.3
+RUN wget https://github.com/adafruit/Adafruit_Python_DHT/archive/$ADAFRUIT_DHT_VERSION.zip \
+  && unzip $ADAFRUIT_DHT_VERSION.zip \
+  && rm -f $ADAFRUIT_DHT_VERSION.zip \
+  && cd Adafruit_Python_DHT-$ADAFRUIT_DHT_VERSION \
+  && python setup.py --force-pi install \
+  && cd .. \
+  && rm -rf Adafruit_Python_DHT-$ADAFRUIT_DHT_VERSION
 
 # Install rtl_433 (https://github.com/merbanan/rtl_433)
-RUN wget https://github.com/merbanan/rtl_433/archive/18.05.zip \
-  && unzip 18.05.zip \
-  && rm -f 18.05.zip \
-  && cd rtl_433-18.05/ \
+RUN wget https://github.com/merbanan/rtl_433/archive/$RTL_433_VERSION.zip \
+  && unzip $RTL_433_VERSION.zip \
+  && rm -f $RTL_433_VERSION.zip \
+  && cd rtl_433-$RTL_433_VERSION/ \
   && mkdir build \
   && cd build \
   && cmake ../ \
@@ -89,21 +102,26 @@ RUN wget https://github.com/merbanan/rtl_433/archive/18.05.zip \
   && make clean
 
 # Install myHouse
-RUN wget https://github.com/myhouse-project/myHouse/archive/v2.4.zip -O myHouse.zip \
+RUN wget https://github.com/myhouse-project/myHouse/archive/v$MYHOUSE_VERSION.zip -O myHouse.zip \
   && unzip myHouse.zip \
-  && mv myHouse-2.4 /myHouse \
+  && mv myHouse-$MYHOUSE_VERSION myHouse \
   && rm -f myHouse.zip
 
 # Expose network services
-EXPOSE 22 80
+EXPOSE 80 1883
 
 # Expose Volumes
-VOLUME /myHouse/conf /myHouse/logs /var/lib/redis /var/log
+VOLUME /conf /logs /data /setup
+
+HEALTHCHECK --interval=5m --timeout=5s --retries=3 \
+  CMD curl -f http://localhost/ || exit 1
 
 # Install entrypoint
-COPY ./docker-entrypoint.sh /usr/local/bin
-RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+COPY ./docker-entrypoint.sh /
+ENTRYPOINT ["bash","/docker-entrypoint.sh"]
+
+# copy setup helper scripts
+COPY ./setup $WORKDIR/setup
 
 # Start myHouse
-CMD ["myhouse"]
+CMD ["myHouse"]

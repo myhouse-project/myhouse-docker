@@ -5,7 +5,7 @@ services:
     image: redis:alpine
     restart: always
     volumes:
-      - ./db:/data
+      - ./data:/data
     networks:
       - myhouse
     expose:
@@ -19,13 +19,8 @@ services:
     depends_on:
       - redis
     volumes:
-      - ./conf:/myHouse/conf
-      - ./logs:/myHouse/logs
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost"]
-      interval: 5m
-      timeout: 10s
-      retries: 3
+      - ./conf:/conf
+      - ./logs:/logs
     networks:
       - myhouse
     ports:
