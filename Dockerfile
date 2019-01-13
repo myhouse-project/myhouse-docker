@@ -113,7 +113,8 @@ EXPOSE 80 1883
 # Expose Volumes
 VOLUME /conf /logs /data /setup
 
-HEALTHCHECK --interval=5m --timeout=5s --retries=3 \
+# Service is healthy if the web interface is up
+HEALTHCHECK --interval=1m --timeout=10s --retries=3 \
   CMD curl -f http://localhost/ || exit 1
 
 # Install entrypoint

@@ -25,14 +25,14 @@ echo
 # execute myHouse (through entrypoint)
 if [ "$1" = 'myHouse' ]; then
 
-  # load/reload user configuration file
-  if [ -f $CONFIG_MOUNT ]; then
-    echo -e "[\e[33mmyHouse\e[0m] Loading user configuration file..."
-    rm -f $CONFIG
-    ln -s $CONFIG_MOUNT $CONFIG
-  else
-    echo -e "[\e[43mmyHouse\e[0m] Using example configuration file; be sure to place your own config.json into /conf"
+  # load/create user configuration file
+  if [ ! -f $CONFIG_MOUNT ]; then
+    echo -e "[\e[43mmyHouse\e[0m] Configuration file not found, using example configuration"
+    cp -f $CONFIG_EXAMPLE $CONFIG_MOUNT
   fi
+  echo -e "[\e[33mmyHouse\e[0m] Loading configuration file..."
+  rm -f $CONFIG
+  ln -s $CONFIG_MOUNT $CONFIG
 
   if [ ! -f $SETUP_DONE ]; then
     # container setup
