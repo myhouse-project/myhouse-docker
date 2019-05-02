@@ -80,14 +80,7 @@ RUN pip install setuptools --upgrade \
   SpeechRecognition==3.5.0 \
   Adafruit-ADS1x15==1.0.2 \
   six==1.11.0
-ENV ADAFRUIT_DHT_VERSION=1.3.3
-RUN wget https://github.com/adafruit/Adafruit_Python_DHT/archive/$ADAFRUIT_DHT_VERSION.zip \
-  && unzip $ADAFRUIT_DHT_VERSION.zip \
-  && rm -f $ADAFRUIT_DHT_VERSION.zip \
-  && cd Adafruit_Python_DHT-$ADAFRUIT_DHT_VERSION \
-  && python setup.py --force-pi install \
-  && cd .. \
-  && rm -rf Adafruit_Python_DHT-$ADAFRUIT_DHT_VERSION
+RUN pip install Adafruit-Python-DHT --install-option="--force-pi"
 
 # Install rtl_433 (https://github.com/merbanan/rtl_433)
 RUN wget https://github.com/merbanan/rtl_433/archive/$RTL_433_VERSION.zip \
